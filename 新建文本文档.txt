@@ -1,0 +1,67 @@
+1.zabbix  yum源
+
+rpm -ivh http://mirrors.aliyun.com/zabbix/zabbix/3.0/rhel/7/x86_64/zabbix-release-3.0-1.el7.noarch.rpm
+修改源
+
+cd  /etc/yum.repos.d/zabbix.repo
+
+3.4的源：
+
+[zabbix]
+name=Zabbix Official Repository - $basearch
+baseurl=http://repo.zabbix.com/zabbix/3.4/rhel/7/$basearch/
+enabled=1
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-ZABBIX-A14FE591
+[zabbix-non-supported]
+name=Zabbix Official Repository non-supported - $basearch 
+baseurl=http://repo.zabbix.com/non-supported/rhel/7/$basearch/
+enabled=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-ZABBIX
+gpgcheck=1
+[zabbix]
+name=Zabbix Official Repository - $basearch
+baseurl=http://mirrors.aliyun.com/zabbix/zabbix/3.0/rhel/7/$basearch/
+enabled=1
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-ZABBIX
+
+[zabbix-non-supported]
+name=Zabbix Official Repository non-supported - $basearch 
+baseurl=http://mirrors.aliyun.com/zabbix/non-supported/rhel/7/$basearch/
+enabled=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-ZABBIX
+gpgcheck=1
+2.安装数据库 zabbix-server
+
+.[root@zabbix-server yum.repos.d]# yum install zabbix-server-mysql zabbix-web-mysql -y
+3.启动mariadb
+
+yum -y install  mariadb-server  mariadb
+[root@zabbix-server ~]# systemctl enable  mariadb 
+Created symlink from /etc/systemd/system/multi-user.target.wants/mariadb.service to /usr/lib/systemd/system/mariadb.service.
+[root@zabbix-server ~]# systemctl start   mariadb
+4.初始化操作  root  123456
+
+[root@zabbix-server ~]# mysql_secure_installation
+5.授权zabbix
+
+create database zabbix  character set utf8 collate utf8_bin;
+MariaDB [(none)]> grant all  on zabbix.*  to zabbix@'localhost'   identified  by  '123456';
+6.初始化数据库
+
+zcat /usr/share/doc/zabbix-server-mysql-3.0.*/create.sql.gz | mysql -uzabbix -p123456  zabbix
+7.修改httpd的文件
+
+vim  /etc/httpd/conf/httpd.conf 
+ServerName 127.0.0.1:80
+vim  /etc/httpd/conf.d/zabbix.conf 
+ php_value date.timezone Asia/Shanghai
+systemctl  restart  htttpd 
+systemctl  enable  htttpd
+8.修改zabbix_server 的配置数据库的文件  数据库不在一台机器上修改下
+
+[root@zabbix-server yum.repos.d]# vim  /etc/zabbix/zabbix_server.conf 
+DBName=zabbix
+DBUser=zabbix
+DBPassword=123456
